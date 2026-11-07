@@ -5,6 +5,7 @@ from apps.assistant.models import Draft
 from apps.assistant.services import generate_draft
 from apps.tickets.models import Ticket
 from apps.webhooks.models import WebhookEvent
+from apps.assistant.rate_limiter import RateLimitExceeded
 
 
 @shared_task(
@@ -66,6 +67,10 @@ def process_ticket(self, webhook_event_id: int):
 
     except WebhookEvent.DoesNotExist:
         return
-
+    except RateLimitExceeded as exc:
+        raise self.retry(
+            exc=exc,
+            countdown=exc.retry_after,
+        )
     except Exception as exc:
         raise self.retry(exc=exc)

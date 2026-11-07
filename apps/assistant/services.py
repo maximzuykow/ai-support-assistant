@@ -1,7 +1,7 @@
 from apps.assistant.providers import get_llm_provider
 from apps.knowledge.services import search_knowledge
 from apps.tickets.models import Ticket
-
+from apps.assistant.rate_limiter import check_llm_rate_limit
 
 def generate_draft(ticket: Ticket) -> str:
     articles = search_knowledge(
@@ -38,6 +38,6 @@ Message:
 
 Write a clear, polite and helpful response.
 """
-
+    check_llm_rate_limit()
     provider = get_llm_provider()
     return provider.generate(prompt)
