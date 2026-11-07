@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Support Assistant — Operator</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px;
+            background: #f4f6f8;
+            color: #202833;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #687386;
+            margin-bottom: 28px;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .message {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: #e1f3e8;
+        }
+
+        .ticket {
+            padding: 24px;
+            margin-bottom: 20px;
+            background: #fff;
+            border: 1px solid #e1e5eb;
+            border-radius: 12px;
+        }
+
+        .ticket h2 {
+            margin-top: 0;
+        }
+
+        .muted {
+            color: #687386;
+            font-size: 14px;
+        }
+
+        .ticket-message {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .draft {
+            padding: 18px;
+            margin-top: 18px;
+            background: #f7f8fa;
+            border-radius: 8px;
+        }
+
+        .draft-content {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 5px;
+            background: #e9edf2;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: 0;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .approve {
+            background: #237a46;
+        }
+
+        .reject {
+            background: #b33b3b;
+        }
+
+        .empty {
+            padding: 30px;
+            background: #fff;
+            border-radius: 12px;
+            text-align: center;
+            color: #687386;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 16px;
+            }
+
+            .ticket {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <h1>Support tickets</h1>
+    <p class="subtitle">Review AI-generated replies and manage customer requests.</p>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% for ticket in tickets %}
+        <section class="ticket">
+            <h2>{{ ticket.subject }}</h2>
+
+            <p class="muted">
+                Ticket: {{ ticket.external_id }} |
+                Customer: {{ ticket.customer_name }} |
+                Status: {{ ticket.status }}
+            </p>
+
+            <p class="ticket-message">{{ ticket.message }}</p>
+
+            <h3>AI drafts</h3>
+
+            {% for draft in ticket.drafts.all %}
+                <div class="draft">
+                    <p>
+                        <strong>Draft #{{ draft.pk }}</strong>
+                        <span class="status">{{ draft.status }}</span>
+                    </p>
+
+                    <div class="draft-content">{{ draft.content }}</div>
+
+                    {% if draft.status == 'pending' %}
+                        <div class="actions">
+                            <form method="post" action="{% url 'operator-approve' draft.pk %}">
+                                {% csrf_token %}
+                                <button class="approve" type="submit">Approve</button>
+                            </form>
+
+                            <form method="post" action="{% url 'operator-reject' draft.pk %}">
+                                {% csrf_token %}
+                                <button class="reject" type="submit">Reject</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <p class="muted">No drafts generated yet.</p>
+            {% endfor %}
+        </section>
+    {% empty %}
+        <div class="empty">No support tickets yet.</div>
+    {% endfor %}
+</div>
+</body>
+</html>
