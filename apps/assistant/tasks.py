@@ -1,6 +1,8 @@
 from celery import shared_task
 from django.db import transaction
 
+from apps.assistant.models import Draft
+from apps.assistant.services import generate_draft
 from apps.tickets.models import Ticket
 from apps.webhooks.models import WebhookEvent
 
@@ -28,7 +30,7 @@ def process_ticket(self, webhook_event_id: int):
             if not external_id:
                 raise ValueError('Webhook payload has no ticket_id')
 
-            ticket, created = Ticket.objects.get_or_create(
+            ticket, _ = Ticket.objects.get_or_create(
                 external_id=str(external_id),
                 defaults={
                     'customer_name': ticket_data.get(
@@ -47,13 +49,23 @@ def process_ticket(self, webhook_event_id: int):
                 },
             )
 
-            return {
-                'ticket_id': ticket.pk,
-                'created': created,
-            }
+        idempotency_key = f'ticket:{ticket.pk}:initial-draft'
+
+        if Draft.objects.filter(idempotency_key=idempotency_key).exists():
+            return
+
+        content = generate_draft(ticket)
+
+        Draft.objects.get_or_create(
+            idempotency_key=idempotency_key,
+            defaults={
+                'ticket': ticket,
+                'content': content,
+            },
+        )
 
     except WebhookEvent.DoesNotExist:
-        return None
+        return
 
     except Exception as exc:
         raise self.retry(exc=exc)
