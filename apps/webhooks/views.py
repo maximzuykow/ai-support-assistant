@@ -1,5 +1,4 @@
 from django.db import IntegrityError, transaction
-from django.urls import reverse
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -29,7 +28,7 @@ class WebhookView(APIView):
                 event, created = WebhookEvent.objects.get_or_create(
                     event_id=data['event_id'],
                     defaults={
-                        'event_type': data['event_type'],
+                        'event_type': 'ticket.created',
                         'payload': data,
                     },
                 )
@@ -54,6 +53,9 @@ class WebhookView(APIView):
             )
 
         return Response(
-            {'detail': 'Webhook accepted.', 'event_id': event.event_id},
+            {
+                'detail': 'Webhook accepted.',
+                'event_id': event.event_id,
+            },
             status=status.HTTP_202_ACCEPTED,
         )
