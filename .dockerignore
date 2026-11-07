@@ -1,0 +1,11 @@
+.git
+.github
+venv
+__pycache__
+*.pyc
+.env
+.env.*
+!.env.example
+db.sqlite3
+celerybeat-schedule*
+.pytest_cache
