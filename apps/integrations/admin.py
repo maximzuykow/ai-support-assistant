@@ -1,6 +1,18 @@
 from django.contrib import admin
 
-from .models import OutboxEvent
+from apps.integrations.models import MockHelpdeskReply, OutboxEvent
+
+
+@admin.register(MockHelpdeskReply)
+class MockHelpdeskReplyAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'ticket_id',
+        'idempotency_key',
+        'created_at',
+    )
+    search_fields = ('ticket_id', 'message', 'idempotency_key')
+    readonly_fields = ('created_at',)
 
 
 @admin.register(OutboxEvent)
@@ -8,14 +20,11 @@ class OutboxEventAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'event_type',
-        'deduplication_key',
         'status',
         'attempts',
         'available_at',
-        'published_at',
+        'created_at',
     )
-
-    list_filter = ('status', 'event_type', 'created_at')
-    search_fields = ('event_type', 'deduplication_key')
-    readonly_fields = ('created_at', 'published_at')
-    ordering = ('created_at',)
+    list_filter = ('status', 'event_type')
+    search_fields = ('deduplication_key',)
+    readonly_fields = ('created_at',)
