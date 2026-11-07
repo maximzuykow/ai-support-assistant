@@ -16,6 +16,8 @@ import os
 
 from dotenv import load_dotenv
 
+from datetime import timedelta
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
@@ -151,3 +153,10 @@ CELERY_TIMEZONE = 'Europe/Kyiv'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+CELERY_BEAT_SCHEDULE = {
+    'dispatch-outbox-events': {
+        'task': 'apps.integrations.tasks.dispatch_outbox_events',
+        'schedule': 5.0,
+    },
+}
