@@ -1,3 +1,19 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import WebhookEvent
+
+
+@admin.register(WebhookEvent)
+class WebhookEventAdmin(admin.ModelAdmin):
+    list_display = (
+        'event_id',
+        'event_type',
+        'status',
+        'received_at',
+        'processed_at',
+    )
+
+    list_filter = ('status', 'event_type', 'received_at')
+    search_fields = ('event_id', 'event_type')
+    readonly_fields = ('received_at',)
+    ordering = ('-received_at',)
