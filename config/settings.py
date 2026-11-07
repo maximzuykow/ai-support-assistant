@@ -37,6 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Project applications
+    'apps.tickets.apps.TicketsConfig',
+    'apps.webhooks.apps.WebhooksConfig',
+    'apps.knowledge.apps.KnowledgeConfig',
+    'apps.assistant.apps.AssistantConfig',
+    'apps.integrations.apps.IntegrationsConfig',
 ]
 
 MIDDLEWARE = [
