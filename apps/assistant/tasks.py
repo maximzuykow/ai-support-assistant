@@ -31,24 +31,20 @@ def process_ticket(self, webhook_event_id: int):
             if not external_id:
                 raise ValueError('Webhook payload has no ticket_id')
 
-            ticket, _ = Ticket.objects.get_or_create(
-                external_id=str(external_id),
-                defaults={
-                    'customer_name': ticket_data.get(
-                        'customer_name',
-                        'Unknown',
-                    ),
-                    'customer_email': ticket_data.get(
-                        'customer_email',
-                        '',
-                    ),
-                    'subject': ticket_data.get(
-                        'subject',
-                        'No subject',
-                    ),
-                    'message': ticket_data.get('message', ''),
-                },
-            )
+            ticket, created = Ticket.objects.get_or_create(
+            external_id=str(external_id),
+            defaults={
+                'customer_name': ticket_data.get('customer_name', 'Unknown'),
+                'customer_email': ticket_data.get('customer_email', ''),
+                'subject': ticket_data.get('subject', 'No subject'),
+                'message': ticket_data.get('message', ''),
+                'reply_url': ticket_data.get('reply_url', ''),
+            },
+        )
+
+        if not ticket.reply_url and ticket_data.get('reply_url'):
+            ticket.reply_url = ticket_data['reply_url']
+            ticket.save(update_fields=['reply_url'])
 
         idempotency_key = f'ticket:{ticket.pk}:initial-draft'
 

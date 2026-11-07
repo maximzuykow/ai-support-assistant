@@ -8,6 +8,7 @@ from django.utils import timezone
 from apps.assistant.models import Draft
 from apps.integrations.helpdesk import HelpdeskClient
 from apps.integrations.models import OutboxEvent
+import httpx
 
 
 TASK_MAPPING = {
@@ -29,6 +30,7 @@ def send_approved_draft(self, draft_id: int):
         client = HelpdeskClient()
 
         client.send_reply(
+            reply_url=draft.ticket.reply_url,
             ticket_id=draft.ticket.external_id,
             message=draft.content,
             idempotency_key=draft.idempotency_key,
@@ -44,7 +46,14 @@ def send_approved_draft(self, draft_id: int):
 
     except Draft.DoesNotExist:
         return
-    except Exception as exc:
+
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code >= 500:
+            raise self.retry(exc=exc)
+
+        raise
+
+    except (httpx.TimeoutException, httpx.TransportError) as exc:
         raise self.retry(exc=exc)
 
 

@@ -15,6 +15,7 @@ class Ticket(models.Model):
     )
     customer_name = models.CharField(max_length=255)
     customer_email = models.EmailField(blank=True)
+    reply_url = models.URLField(max_length=1000, blank=True)
     subject = models.CharField(max_length=255)
     message = models.TextField()
 
