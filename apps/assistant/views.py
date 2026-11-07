@@ -8,7 +8,8 @@ from rest_framework.views import APIView
 from apps.assistant.models import Draft
 from apps.assistant.serializers import TicketSerializer
 from apps.tickets.models import Ticket
-
+from django.db import transaction
+from apps.integrations.tasks import send_approved_draft
 
 class TicketListView(generics.ListAPIView):
     queryset = Ticket.objects.prefetch_related('drafts').all()
@@ -40,6 +41,7 @@ class DraftApprovalView(APIView):
         draft.status = Draft.Status.APPROVED
         draft.approved_at = timezone.now()
         draft.save(update_fields=['status', 'approved_at'])
+        transaction.on_commit(lambda: send_approved_draft.delay(draft.pk))
 
         return Response({
             'detail': 'Draft approved.',

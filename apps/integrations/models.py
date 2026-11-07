@@ -43,3 +43,15 @@ class OutboxEvent(models.Model):
 
     def __str__(self):
         return f'{self.event_type}: {self.status}'
+
+class MockHelpdeskReply(models.Model):
+    ticket_id = models.CharField(max_length=255)
+    message = models.TextField()
+    idempotency_key = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Reply for ticket {self.ticket_id}'
