@@ -10,10 +10,10 @@ The system receives support tickets through webhooks, processes them asynchronou
 - Webhook event deduplication
 - Asynchronous background processing with Celery
 - Transactional Outbox pattern
-- AI response generation with OpenAI integration
-- Mock LLM provider for local development
+- OpenAI integration for AI response generation
+- Static fallback response when no LLM API key is configured
 - Knowledge base with PostgreSQL full-text search
-- Global rate limiting using Redis
+- Global rate limiting using Redis (60 requests per minute)
 - Operator dashboard for reviewing AI-generated drafts
 - Approve and reject workflow
 - Mock Helpdesk integration
@@ -27,7 +27,7 @@ The system receives support tickets through webhooks, processes them asynchronou
 3. An Outbox event is created in the same database transaction.
 4. Celery Beat dispatches pending events to Celery Worker.
 5. The worker creates a ticket and searches the knowledge base.
-6. The LLM generates a response draft.
+6. The LLM provider generates a response draft using the knowledge base context.
 7. An operator reviews the draft in the dashboard.
 8. Approved drafts are sent to the helpdesk.
 9. The draft status changes to `sent`.
@@ -75,52 +75,119 @@ python -m pip install -r requirements.txt
 
 Copy `.env.example` to `.env` and configure your local settings.
 
-### 5. Run migrations
+### 5. Start PostgreSQL and Redis
+
+PostgreSQL and Redis must be running before starting the application.
+
+Configure their connection details in `.env`.
+
+### 6. Run migrations
 
 ```bash
 python manage.py migrate
 ```
 
-### 6. Create administrator
+### 7. Create administrator
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 7. Start Django
+### 8. Start Django
 
 ```bash
 python manage.py runserver
 ```
 
-### 8. Start Celery Worker
+Django will be available at:
 
-```bash
+`http://127.0.0.1:8000/`
+
+### 9. Start Celery Worker
+
+Open a separate terminal:
+
+```powershell
 python -m celery -A config worker -l info --pool=solo
 ```
 
-### 9. Start Celery Beat
+### 10. Start Celery Beat
 
-```bash
+Open another terminal:
+
+```powershell
 python -m celery -A config beat -l info
 ```
 
-Redis and PostgreSQL must be running before starting the application.
+Celery Beat dispatches pending Outbox events every 5 seconds.
+
+### 11. Start Mock Helpdesk
+
+Open another terminal:
+
+```powershell
+python manage.py runserver 8001
+```
+
+Mock Helpdesk will be available at:
+
+`http://127.0.0.1:8001/`
 
 ## Main Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/webhooks/` | Receive support ticket webhook |
+| POST | `/webhooks/helpdesk` | Receive support ticket webhook |
 | GET | `/api/tickets/` | List tickets |
 | GET | `/api/tickets/<id>/` | Retrieve ticket |
 | POST | `/api/drafts/<id>/approve/` | Approve draft |
 | POST | `/api/drafts/<id>/reject/` | Reject draft |
 | GET | `/api/operator/` | Operator dashboard |
+| GET | `/health` | Health check |
+
+## Knowledge Base
+
+The project includes a knowledge base with short articles for a fictional product called CloudDesk.
+
+Articles are stored in PostgreSQL and searched using PostgreSQL full-text search with an additional fallback search.
+
+The retrieved articles are included in the prompt sent to the LLM provider.
+
+## LLM Configuration
+
+Configure the provider using environment variables:
+
+```dotenv
+LLM_PROVIDER=openai
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+```
+
+When an API key is configured, the application sends requests to OpenAI.
+
+When no API key is configured, the application still makes a real HTTP request to the provider, waits for a simulated processing delay and returns a static fallback response.
+
+The fallback allows the rest of the ticket-processing and operator-approval workflow to be demonstrated without a paid API key.
 
 ## Environment Variables
 
 See `.env.example` for the required configuration.
+
+Important variables:
+
+- `SECRET_KEY`
+- `DEBUG`
+- `ALLOWED_HOSTS`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_HOST`
+- `DB_PORT`
+- `REDIS_URL`
+- `LLM_PROVIDER`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `HELPDESK_API_KEY`
 
 ## Security
 
@@ -128,8 +195,14 @@ See `.env.example` for the required configuration.
 - `.env` is excluded from Git.
 - Operator views require staff authentication.
 - Mock Helpdesk requests require API key authentication.
-- Webhook events and outgoing replies support idempotency.
+- Webhook events support deduplication.
+- Outgoing replies use idempotency keys to prevent duplicate responses.
+
+## Testing
+
+The application includes a GitHub Actions workflow that checks the Django configuration, validates migrations and runs database migrations.
 
 ## Project Status
 
-This project is under active development.
+This project was developed as a backend engineering take-home assignment.
+
