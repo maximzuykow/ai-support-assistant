@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'rest_framework',
     # Project applications
     'apps.tickets.apps.TicketsConfig',
     'apps.webhooks.apps.WebhooksConfig',
