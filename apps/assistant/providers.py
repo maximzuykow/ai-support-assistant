@@ -1,4 +1,5 @@
 import os
+import time
 from abc import ABC, abstractmethod
 
 import httpx
@@ -39,6 +40,26 @@ class OpenAIProvider(BaseLLMProvider):
         )
 
         response.raise_for_status()
-        data = response.json()
+        return response.json()['choices'][0]['message']['content'].strip()
 
-        return data['choices'][0]['message']['content'].strip()
+
+class MockLLMProvider(BaseLLMProvider):
+    def generate(self, prompt: str) -> str:
+        time.sleep(5)
+
+        return (
+            'Thank you for contacting our support team. '
+            'We have received your request and will review it shortly.'
+        )
+
+
+def get_llm_provider() -> BaseLLMProvider:
+    provider = os.getenv('LLM_PROVIDER', 'mock').lower()
+
+    if provider == 'openai':
+        return OpenAIProvider()
+
+    if provider == 'mock':
+        return MockLLMProvider()
+
+    raise ValueError(f'Unsupported LLM provider: {provider}')
